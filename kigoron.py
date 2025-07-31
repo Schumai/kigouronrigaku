@@ -1,16 +1,14 @@
-# === 論理演算の定義 ===
-
-def and_intro(p, q):
+def andI(p, q):
     if p[0] == "atom" and q[0] == "atom":
         return ("and", p[1], q[1])
     return None
 
-def and_elim_left(expr):
+def andE_left(expr):
     if expr[0] == "and":
         return ("atom", expr[1])
     return None
 
-def and_elim_right(expr):
+def andE_right(expr):
     if expr[0] == "and":
         return ("atom", expr[2])
     return None
@@ -46,8 +44,6 @@ def expr_to_str(expr):
     else:
         return str(expr)
 
-# === 証明器（探索ログつき） ===
-
 def run_proof_with_full_log(premises, goal):
     proven = set(premises)
     changed = True
@@ -57,10 +53,9 @@ def run_proof_with_full_log(premises, goal):
         changed = False
         new_proven = set(proven)
 
-        # ∧除去
         for expr in [p for p in proven if p[0] == "and"]:
-            left = and_elim_left(expr)
-            right = and_elim_right(expr)
+            left = andE_left(expr)
+            right = andE_right(expr)
             if left:
                 log.append(f"  ∧除去(左): {expr_to_str(expr)} ⊢ {expr_to_str(left)} {'✔' if left not in proven else '(既出)'}")
                 if left not in proven:
@@ -72,19 +67,17 @@ def run_proof_with_full_log(premises, goal):
                     new_proven.add(right)
                     changed = True
 
-        # ∧導入
         atoms = [p for p in proven if p[0] == "atom"]
         for p in atoms:
             for q in atoms:
                 if p != q:
-                    conj = and_intro(p, q)
+                    conj = andI(p, q)
                     if conj:
                         log.append(f"  ∧導入: {expr_to_str(p)}, {expr_to_str(q)} ⊢ {expr_to_str(conj)} {'✔' if conj not in proven else '(既出)'}")
                         if conj not in proven:
                             new_proven.add(conj)
                             changed = True
 
-        # →除去（Modus Ponens）
         for imp in [p for p in proven if p[0] == "implies"]:
             for fact in proven:
                 result = implyE(imp, fact)
@@ -96,7 +89,6 @@ def run_proof_with_full_log(premises, goal):
                         new_proven.add(result)
                         changed = True
 
-        # ∨導入（成功・失敗両方ログ）
         if goal[0] == "or":
             left_goal, right_goal = goal[1], goal[2]
             for p in [e for e in proven if e[0] == "atom"]:
@@ -119,7 +111,6 @@ def run_proof_with_full_log(premises, goal):
 
     return log, goal in proven
 
-# === 実行例 ===
 
 if __name__ == "__main__":
     problem = {
